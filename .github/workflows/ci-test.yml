@@ -283,6 +283,7 @@ jobs:
             echo ${{ needs.build-images.outputs.head-tag }}
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
+            echo "::set-output name=prev-tag::''";
           elif ${{ needs.need-extra-images.result=='success' }}; then
             echo nonwhere
             echo ${{ needs.build-images.outputs.head-tag }}
