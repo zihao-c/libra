@@ -53,14 +53,15 @@ jobs:
         name: build extra images if it is needed by LBT
         if: ${{ github.event_name == 'push' }}
         run: |
+          res=false
           echo ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}; then
             echo "Compat killswitch activated! Will run land_blocking suite";
-            echo "::set-output name=need-extra::false";
+            res=false
           else
             echo "Will run land_blocking_compat suite"
-            echo "::set-output name=need-extra::false";
           fi
+          echo "::set-output name=need-extra::$(echo $res)";
       - id: rust-changes
         name: find rust/cargo changes.
         uses: ./.github/actions/matches
@@ -211,7 +212,7 @@ jobs:
         run: |
           BASE_REF=${{steps.pr-base-ref.outputs.result}}
           echo "BASE_REF=$BASE_REF" >> $GITHUB_ENV
-          echo "BASE_GIT_REV=$(git rev-parse --short=8 origin/master)" >> $GITHUB_ENV
+          echo "BASE_GIT_REV=$(git rev-parse --short=8 upstream/$BASE_REF)" >> $GITHUB_ENV
       - name: find images
         run: |
           set +e
@@ -248,18 +249,19 @@ jobs:
       - name: build extra images
         id: build-extra-images
         run: |
+          res=land_$BASE_GIT_REV
           if [ $BUILD_PREV -eq 1 ]; then
-            compat_prev_tag=land_$BASE_GIT_REV
+            compat_prev_tag=$res
             echo "Starting codebuild for $compat_prev_tag"
-            echo "::set-output name=prev-tag::$compat_prev_tag";
             VERSION=$BASE_GIT_REV ADDL_TAG=$compat_prev_tag .github/actions/land-blocking/cti-codebuild.sh &> codebuild-prev.log &
             prev_build_pid=$!
             wait $prev_build_pid
             echo "====== codebuild-prev.log start ======"
             cat codebuild-prev.log
           else
-            echo "::set-output name=prev-tag::$PREV_TAG";
+            res=$PREV_TAG;
           fi
+          echo "::set-output name=prev-tag::$(echo $res)";
 
   land-blocking-switch:
     runs-on: ubuntu-latest-xl
@@ -275,31 +277,26 @@ jobs:
       - name: set lbt switch value
         id: set-switch
         run: |
+          lbt-switch=true
+          head-tag=''
+          prev-tag=''
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_TEST || needs.build-images.result!='success' }}; then
-            echo here
-            echo "::set-output name=lbt-switch::false";
+            lbt-switch=false
           elif ${{ needs.need-extra-images.result=='skipped' }}; then
-            echo there
-            echo ${{ needs.build-images.outputs.head-tag }}
-            echo "::set-output name=lbt-switch::true";
-            echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
-            echo "::set-output name=prev-tag::''";
+            head-tag=${{ needs.build-images.outputs.head-tag }}
           elif ${{ needs.need-extra-images.result=='success' }}; then
-            echo nonwhere
-            echo ${{ needs.build-images.outputs.head-tag }}
-            echo ${{ needs.need-extra-images.outputs.prev-tag }}
-            echo "::set-output name=lbt-switch::true";
-            echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
-            echo "::set-output name=prev-tag::${{ needs.need-extra-images.outputs.prev-tag }}";
+            head-tag=${{ needs.build-images.outputs.head-tag }}
+            prev-tag=${{ needs.build-images.outputs.prev-tag }}
           else
-            echo lasthere
-            echo "::set-output name=lbt-switch::false";
+            lbt-switch = false
           fi
+          echo "::set-output name=lbt-switch::$(echo $lbt-switch)";
+          echo "::set-output name=head-tag::$(echo $head-tag)";
+          echo "::set-output name=prev-tag::$(echo $prev-tag)";
 
   land-blocking-test:
     name: Run land blocking test
     runs-on: self-hosted
-    if: ${{ always() }}
     needs: [prepare, land-blocking-switch]
     timeout-minutes: 30
     steps:
@@ -433,7 +430,6 @@ jobs:
               should_fail = true;
             }
             // Add repro cmd to message
-            console.log("hhhhhhhhhh1\n");
             try {
               body += "\nRepro cmd:\n";
               body += `
