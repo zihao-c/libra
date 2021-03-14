@@ -264,7 +264,9 @@ jobs:
   land-blocking-switch:
     runs-on: ubuntu-latest-xl
     if: ${{ always() }}
-    needs: [build-images, need-extra-images]
+    needs:
+      - build-images
+      - need-extra-images
     outputs:
       lbt-switch: ${{ steps.set-switch.outputs.lbt-switch }}
       head-tag: ${{ steps.set-switch.outputs.head-tag }}
@@ -293,12 +295,11 @@ jobs:
   land-blocking-test:
     name: Run land blocking test
     runs-on: self-hosted
-    needs: [land-blocking-switch]
+    needs: land-blocking-switch
     if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true'  }}
     timeout-minutes: 30
     steps:
       - name: Launch cluster test
-        if: steps.check_ks.outputs.should_run == 'true'
         # NOTE Remember to update PR comment payload if cti cmd is updated.
         run: |
           set +e
@@ -354,7 +355,6 @@ jobs:
             curl -X POST -H 'Content-type: application/json' -d @/tmp/payload ${{ secrets.WEBHOOK_FLAKY_LAND_BLOCKING_CT }}
           fi
       - name: Post test results on PR
-        if: steps.check_ks.outputs.should_run == 'true'
         uses: actions/github-script@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
