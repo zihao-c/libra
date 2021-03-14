@@ -279,7 +279,7 @@ jobs:
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
             echo "::set-output name=prev-tag::${{ needs.need-extra-images.outputs.prev-tag }}";
-          fi;
+          fi
 
   land-blocking-test:
     name: Run land blocking test
