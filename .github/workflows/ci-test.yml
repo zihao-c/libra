@@ -272,16 +272,13 @@ jobs:
         run: |
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_TEST || needs.build-images.result!='success' }}; then
             echo "::set-output name=lbt-switch::false";
-            echo here
           elif ${{ needs.need-extra-images.result=='skipped' }}; then
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
-            echo there
           else
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
             echo "::set-output name=prev-tag::${{ needs.need-extra-images.outputs.prev-tag }}";
-            echo nonwhere
           fi
 
   land-blocking-test:
