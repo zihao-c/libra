@@ -53,10 +53,12 @@ jobs:
         name: build extra images if it is needed by LBT
         if: ${{ github.event_name == 'push' }}
         run: |
+          echo ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}; then
             echo "Compat killswitch activated! Will run land_blocking suite";
             echo "::set-output name=need-extra::false";
           else
+            echo "Will run land_blocking_compat suite"
             echo "::set-output name=need-extra::true";
           fi
       - id: rust-changes
@@ -212,6 +214,7 @@ jobs:
           echo "BASE_GIT_REV=$(git rev-parse --short=8 origin/$BASE_REF)" >> $GITHUB_ENV
       - name: find images
         run: |
+          set +e
           echo "Will run land_blocking_compat suite"
           echo "Finding a previous image tag to test against"
           .github/actions/land-blocking/find-lbt-images.sh > lbt_images_output.txt
@@ -265,17 +268,23 @@ jobs:
     outputs:
       lbt-switch: ${{ steps.set-switch.outputs.lbt-switch }}
       head-tag: ${{ steps.set-switch.outputs.head-tag }}
-      prev-tag: ${{ steps.set-switch.outputs.head-tag }}
+      prev-tag: ${{ steps.set-switch.outputs.prev-tag }}
     steps:
       - name: set lbt switch value
         id: set-switch
         run: |
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_TEST || needs.build-images.result!='success' }}; then
+            echo here
             echo "::set-output name=lbt-switch::false";
           elif ${{ needs.need-extra-images.result=='skipped' }}; then
+            echo there
+            echo ${{ needs.build-images.outputs.head-tag }}
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
           else
+            echo nonwhere
+            echo ${{ needs.build-images.outputs.head-tag }}
+            echo ${{ needs.need-extra-images.outputs.prev-tag }}
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
             echo "::set-output name=prev-tag::${{ needs.need-extra-images.outputs.prev-tag }}";
