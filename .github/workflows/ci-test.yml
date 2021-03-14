@@ -51,7 +51,6 @@ jobs:
           invert: "true"
       - id: need-extra-images
         name: build extra images if it is needed by LBT
-        if: ${{ github.event_name == 'push' }}
         run: |
           res=false
           echo ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}
@@ -298,6 +297,7 @@ jobs:
     name: Run land blocking test
     runs-on: self-hosted
     needs: [prepare, land-blocking-switch]
+    if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true' }}
     timeout-minutes: 30
     steps:
       - name: Launch cluster test
