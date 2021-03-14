@@ -59,7 +59,7 @@ jobs:
             echo "::set-output name=need-extra::false";
           else
             echo "Will run land_blocking_compat suite"
-            echo "::set-output name=need-extra::true";
+            echo "::set-output name=need-extra::false";
           fi
       - id: rust-changes
         name: find rust/cargo changes.
@@ -211,7 +211,7 @@ jobs:
         run: |
           BASE_REF=${{steps.pr-base-ref.outputs.result}}
           echo "BASE_REF=$BASE_REF" >> $GITHUB_ENV
-          echo "BASE_GIT_REV=$(git rev-parse --short=8 origin/$BASE_REF)" >> $GITHUB_ENV
+          echo "BASE_GIT_REV=$(git rev-parse --short=8 origin/master)" >> $GITHUB_ENV
       - name: find images
         run: |
           set +e
@@ -283,13 +283,16 @@ jobs:
             echo ${{ needs.build-images.outputs.head-tag }}
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
-          else
+          elif ${{ needs.need-extra-images.result=='success' }}; then
             echo nonwhere
             echo ${{ needs.build-images.outputs.head-tag }}
             echo ${{ needs.need-extra-images.outputs.prev-tag }}
             echo "::set-output name=lbt-switch::true";
             echo "::set-output name=head-tag::${{ needs.build-images.outputs.head-tag }}";
             echo "::set-output name=prev-tag::${{ needs.need-extra-images.outputs.prev-tag }}";
+          else
+            echo lasthere
+            echo "::set-output name=lbt-switch::false";
           fi
 
   land-blocking-test:
