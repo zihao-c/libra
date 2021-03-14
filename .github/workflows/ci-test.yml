@@ -300,7 +300,7 @@ jobs:
     name: Run land blocking test
     runs-on: self-hosted
     if: ${{ always() }}
-    needs: land-blocking-switch
+    needs: [prepare, land-blocking-switch]
     timeout-minutes: 30
     steps:
       - name: Launch cluster test
@@ -313,9 +313,11 @@ jobs:
           export CTI_OUTPUT_LOG=$(mktemp)
           echo "CTI_OUTPUT_LOG=$CTI_OUTPUT_LOG" >> $GITHUB_ENV
           cmd=""
-          if [ -z "${{ needs.land-blocking-switch.outputs.prev-tag }}" ]; then
+          if [ "${{ needs.land-blocking-switch.outputs.prev-tag }} == ''" ]; then
+            echo here
             cmd="./scripts/cti --tag ${{ needs.land-blocking-switch.outputs.head-tag }} -E RUST_LOG=debug --report report.json --suite land_blocking"
           else
+            echo there
             cmd="./scripts/cti --tag ${{ needs.land-blocking-switch.outputs.prev-tag }} --cluster-test-tag ${{ needs.land-blocking-switch.outputs.head-tag }} -E RUST_LOG=debug -E BATCH_SIZE=15 -E UPDATE_TO_TAG=${{ needs.land-blocking-switch.outputs.head-tag }} --report report.json --suite land_blocking_compat"
           fi
           eval $cmd
@@ -431,6 +433,7 @@ jobs:
               should_fail = true;
             }
             // Add repro cmd to message
+            console.log("hhhhhhhhhh1\n");
             try {
               body += "\nRepro cmd:\n";
               body += `
@@ -440,7 +443,7 @@ jobs:
               `
             } catch (err) {
               if (err.code === 'ReferenceError') {
-                console.error("One of the following env vars is not set: ${{ needs.land-blocking-switch.outputs.head-tag }}, ${{ needs.land-blocking-switch.outputs.prev-tag }}");
+                console.error("One of the following env vars is not set");
               } else {
                 body += "[GHA DEBUG]\nFound error in actions/github-script\n";
                 body += err;
