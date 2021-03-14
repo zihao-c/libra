@@ -300,12 +300,12 @@ jobs:
     name: Run land blocking test
     runs-on: self-hosted
     needs: land-blocking-switch
-    if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true'  }}
     timeout-minutes: 30
     steps:
       - name: Launch cluster test
         # NOTE Remember to update PR comment payload if cti cmd is updated.
         run: |
+          echo here_${{ needs.land-blocking-switch.outputs.lbt-switch }}
           set +e
           date
           export CTI_OUTPUT_LOG=$(mktemp)
