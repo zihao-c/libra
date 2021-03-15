@@ -53,13 +53,6 @@ jobs:
         name: build extra images if it is needed by LBT
         run: |
           res=false
-          echo ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}
-          if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}; then
-            echo "Compat killswitch activated! Will run land_blocking suite";
-            res=false
-          else
-            echo "Will run land_blocking_compat suite"
-          fi
           echo "::set-output name=need-extra::$(echo $res)";
       - id: rust-changes
         name: find rust/cargo changes.
@@ -276,20 +269,20 @@ jobs:
       - name: set lbt switch value
         id: set-switch
         run: |
-          lbt-switch=true
+          lbt=true
           head-tag=''
           prev-tag=''
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_TEST || needs.build-images.result!='success' }}; then
-            lbt-switch=false
+            lbt=false
           elif ${{ needs.need-extra-images.result=='skipped' }}; then
             head-tag=${{ needs.build-images.outputs.head-tag }}
           elif ${{ needs.need-extra-images.result=='success' }}; then
             head-tag=${{ needs.build-images.outputs.head-tag }}
             prev-tag=${{ needs.build-images.outputs.prev-tag }}
           else
-            lbt-switch = false
+            lbt = false
           fi
-          echo "::set-output name=lbt-switch::$(echo $lbt-switch)";
+          echo "::set-output name=lbt-switch::$(echo $lbt)";
           echo "::set-output name=head-tag::$(echo $head-tag)";
           echo "::set-output name=prev-tag::$(echo $prev-tag)";
 
