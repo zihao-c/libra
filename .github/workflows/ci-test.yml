@@ -51,8 +51,15 @@ jobs:
           invert: "true"
       - id: need-extra-images
         name: build extra images if it is needed by LBT
+        if: ${{ github.event_name == 'push' }}
         run: |
           res=false
+          if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_COMPAT }}; then
+            echo "Compat killswitch activated! Will run land_blocking suite";
+            res=false
+          else
+            echo "Will run land_blocking_compat suite"
+          fi
           echo "::set-output name=need-extra::$(echo $res)";
       - id: rust-changes
         name: find rust/cargo changes.
@@ -290,10 +297,11 @@ jobs:
     name: Run land blocking test
     runs-on: self-hosted
     needs: [prepare, land-blocking-switch]
-    if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true' }}
+    if: ${{ always() }}
     timeout-minutes: 30
     steps:
       - name: Launch cluster test
+        if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true' }}
         # NOTE Remember to update PR comment payload if cti cmd is updated.
         run: |
           echo ${{ needs.land-blocking-switch.result }}
@@ -354,6 +362,7 @@ jobs:
           fi
       - name: Post test results on PR
         uses: actions/github-script@v3
+        if: ${{ needs.land-blocking-switch.outputs.lbt-switch == 'true' }}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
