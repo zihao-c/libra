@@ -270,21 +270,21 @@ jobs:
         id: set-switch
         run: |
           lbt=true
-          head-tag=''
-          prev-tag=''
+          head=''
+          prev=''
           if ${{ secrets.KILL_SWITCH_LAND_BLOCKING_TEST || needs.build-images.result!='success' }}; then
             lbt=false
           elif ${{ needs.need-extra-images.result=='skipped' }}; then
-            head-tag=${{ needs.build-images.outputs.head-tag }}
+            head=${{ needs.build-images.outputs.head-tag }}
           elif ${{ needs.need-extra-images.result=='success' }}; then
-            head-tag=${{ needs.build-images.outputs.head-tag }}
-            prev-tag=${{ needs.build-images.outputs.prev-tag }}
+            head=${{ needs.build-images.outputs.head-tag }}
+            prev=${{ needs.build-images.outputs.prev-tag }}
           else
             lbt = false
           fi
           echo "::set-output name=lbt-switch::$(echo $lbt)";
-          echo "::set-output name=head-tag::$(echo $head-tag)";
-          echo "::set-output name=prev-tag::$(echo $prev-tag)";
+          echo "::set-output name=head-tag::$(echo $head)";
+          echo "::set-output name=prev-tag::$(echo $prev)";
 
   land-blocking-test:
     name: Run land blocking test
